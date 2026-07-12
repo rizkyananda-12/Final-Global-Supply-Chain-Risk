@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Country;
+use App\Services\ExternalApiService;
+use App\Services\RiskScoringEngine;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;   
+
+class SupplyChainApiController extends Controller {
+    protected $apiService;
+    protected $riskEngine;
+
+    public function __construct(ExternalApiService $apiService, RiskScoringEngine $riskEngine) {
+        $this->apiService = $apiService;
+        $this->riskEngine = $riskEngine;
+    }
+
+    // GET /api/countries
+    public function getCountries() {
+        return response()->json(\App\Models\Country::all(), 200);
+    }
+
+    // GET /api/risk (Menghitung live risk score per negara)
+    public function getRiskScore(Request $request) {
+        $countryIso = $request->get('iso', 'DE'); 
+        $country = Country::where('iso2', $countryIso)->first();
+
+        if (!$country) {
+            return response()->json(['message' => 'Country not found'], 404);
+        }
+
+        // 1. Hitung Live Weather Risk (Simulasi koordinat ibu kota)
+        $latLongs = ['DE' => [52.52, 13.41], 'CN' => [39.90, 116.40], 'ID' => [-6.20, 106.81], 'AU' => [-35.28, 149.13]];
+        $coords = $latLongs[$countryIso] ?? [0.0, 0.0];
+        
+        $weatherData = $this->apiService->getWeatherData($coords[0], $coords[1]);
+        $windSpeed = $weatherData['current_weather']['windspeed'] ?? 0;
+        // Logika dosen: Angin > 30 km/jam dianggap berisiko bagi kapal/pesawat logistik
+        $weatherRisk = $windSpeed > 30 ? 85 : ($windSpeed > 15 ? 50 : 15);
+
+        // 2. Hitung Live Inflation Risk
+        $inflationData = $this->apiService->getInflationData($countryIso);
+        $latestInflation = $inflationData[0]['value'] ?? $country->inflation;
+        $inflationRisk = $latestInflation > 5 ? 80 : ($latestInflation > 2 ? 40 : 10);
+
+        // 3. Hitung Live News Sentiment Risk menggunakan GNews API Alternatif
+        // Silakan daftarkan API key gratis di gnews.io dan masukkan ke sini
+        $gnewsKey = "MASUKKAN_GNEWS_API_KEY_KAMU_DISINI"; 
+        $cacheKey = "news_risk_" . $countryIso;
+        $sentimentResult = Cache::remember($cacheKey, 3600, function () use ($country, $gnewsKey) {
+            $newsResponse = Http::get("https://gnews.io/api/v4/search?q=logistics+{$country->name}&token={$gnewsKey}&lang=en");
+            $sentimentText = "stable trade and growth observed"; // fallback
+            if ($newsResponse->successful() && isset($newsResponse->json()['articles'])) {
+                $articles = $newsResponse->json()['articles'];
+            if (count($articles) > 0) {
+                $sentimentText = $articles[0]['title'] . " " . $articles[0]['description'];
+                }
+            }
+            return $this->riskEngine->analyzeNewsSentiment($sentimentText);
+        });
+
+// 2. TEPAT DI SINI: Definisikan variabel $newsRisk agar bisa dibaca di bagian bawah kode kamu!
+    $newsRisk = $sentimentResult['risk_rating'];
+
+        // 4. Hitung Live Currency Impact Risk
+        $exchangeData = $this->apiService->getExchangeRate($country->currency_code);
+        $currencyRisk = isset($exchangeData['rates']['USD']) && $exchangeData['rates']['USD'] < 0.5 ? 60 : 20;
+
+        // Satukan ke Weighted Model Engine
+        $finalRisk = $this->riskEngine->calculateTotalRisk($weatherRisk, $inflationRisk, $newsRisk, $currencyRisk);
+
+        return response()->json([
+            'country' => $country->name,
+            'iso2' => $countryIso,
+            'currency' => $country->currency_code,
+            'metrics' => [
+                'gdp' => $country->gdp,
+                'population' => $country->population,
+                'current_windspeed' => $windSpeed . " km/h",
+                'current_inflation' => round($latestInflation, 2) . "%"
+            ],
+            'sentiment_analysis' => [
+                'positive' => $sentimentResult['positive'] . "%",
+                'neutral' => $sentimentResult['neutral'] . "%",
+                'negative' => $sentimentResult['negative'] . "%"
+            ],
+            'components_score' => [
+                'weather' => $weatherRisk,
+                'inflation' => $inflationRisk,
+                'currency' => $currencyRisk,
+                'news' => $newsRisk
+            ],
+            'total_risk_score' => $finalRisk['score'],
+            'status' => $finalRisk['status']
+        ], 200);
+    }
+
+    // GET /api/ports (World Port Index Data)
+    public function getPorts(Request $request) {
+        $countryIso = $request->get('iso', 'ID');
+        // Mengembalikan sample data koordinat pelabuhan utama untuk Leaflet Spasial
+        $samplePorts = [
+            'ID' => [['name' => 'Tanjung Priok', 'lat' => -6.10, 'lon' => 106.89], ['name' => 'Tanjung Perak', 'lat' => -7.20, 'lon' => 112.73]],
+            'DE' => [['name' => 'Port of Hamburg', 'lat' => 53.54, 'lon' => 9.93]],
+            'CN' => [['name' => 'Port of Shanghai', 'lat' => 31.22, 'lon' => 121.48]],
+            'AU' => [['name' => 'Port of Sydney', 'lat' => -33.86, 'lon' => 151.21]],
+        ];
+
+        return response()->json($samplePorts[$countryIso] ?? [], 200);
+    }
+}
