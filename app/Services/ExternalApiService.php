@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class ExternalApiService {
     
-    // 1. Integrasi Open-Meteo API (Tanpa API Key)
     public function getWeatherData($lat, $lon) {
         try {
             $response = Http::get("https://api.open-meteo.com/v1/forecast", [
@@ -24,10 +23,8 @@ class ExternalApiService {
         }
     }
 
-    // 2. Integrasi World Bank API (Mencari Tren Inflasi Negara)
     public function getInflationData($countryIso) {
         try {
-            // FP.CPI.TOTL.ZG adalah kode indikator untuk Inflasi di World Bank
             $response = Http::get("https://api.worldbank.org/v2/country/{$countryIso}/indicator/FP.CPI.TOTL.ZG", [
                 'format' => 'json',
                 'per_page' => 5
@@ -41,10 +38,8 @@ class ExternalApiService {
         }
     }
 
-    // 3. Integrasi ExchangeRate API (Real-time Currency)
     public function getExchangeRate($baseCurrency) {
         try {
-            // Menggunakan endpoint free tanpa key
             $response = Http::get("https://open.er-api.com/v6/latest/{$baseCurrency}");
             return $response->successful() ? $response->json() : null;
         } catch (\Exception $e) {

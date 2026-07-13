@@ -15,7 +15,6 @@
 <body>
 
 <div class="container py-5">
-    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-5 bg-white p-4 rounded-4 shadow-sm">
         <div>
             <h2 class="fw-bold text-dark mb-0">Global Supply Chain Risk Platform</h2>
@@ -28,7 +27,6 @@
         </div>
     </div>
 
-    <!-- Baris 1: Ringkasan Skor Risiko & Indikator Makro -->
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
             <div id="riskCard" class="card text-white bg-dark h-100 p-4 text-center d-flex flex-column justify-content-center">
@@ -62,7 +60,6 @@
         </div>
     </div>
 
-    <!-- Baris 2: Visualisasi Spasial & Analitik Grafik -->
     <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="card p-4 h-100">
@@ -78,7 +75,6 @@
         </div>
     </div>
 
-    <!-- Baris 3: AI Sentiment Analysis Intelligence -->
     <div class="row">
         <div class="col-12">
             <div class="card p-4 bg-white">
@@ -98,7 +94,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Setup Peta Interaktif Global (Leaflet.js)
     var map = L.map('map').setView([-2.5, 118], 3);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     var markerGroup = L.layerGroup().addTo(map);
@@ -107,47 +102,38 @@
     var chartRiskInstance;
 
     $(document).ready(function() {
-        // Load List Negara Ke Dropdown saat pertama kali dibuka
         $.get('/api/countries', function(countries) {
             countries.forEach(c => {
                 $('#countrySelect').append(`<option value="${c.iso2}">${c.name}</option>`);
             });
-            // Jalankan pencarian default untuk negara pertama
             fetchIntelligenceData($('#countrySelect').val());
         });
 
-        // Event listener saat dropdown negara diganti
         $('#countrySelect').change(function() {
             fetchIntelligenceData($(this).val());
         });
     });
 
-    // Core AJAX function untuk menarik data dari Backend REST API kita
     function fetchIntelligenceData(isoCode) {
-        // Ambil Data Perhitungan Risiko & API Realtime
         $.get('/api/risk?iso=' + isoCode, function(data) {
             $('#txtTotalScore').text(data.total_risk_score);
             $('#badgeStatus').text(data.status);
-            
-            // Mengubah style card berdasarkan level ancaman keamanan logistik
+
             var card = $('#riskCard');
             card.removeClass('bg-success bg-warning bg-danger bg-dark');
             if(data.status === "Low Risk") card.addClass('bg-success');
             else if(data.status === "Medium Risk") card.addClass('bg-warning text-dark');
             else card.addClass('bg-danger');
 
-            // Set Teks Indikator Makro
             $('#txtCurrency').text(data.currency);
             $('#txtInflation').text(data.metrics.current_inflation);
             $('#txtWind').text(data.metrics.current_windspeed);
             $('#txtGdp').text('$' + (data.metrics.gdp / 1e12).toFixed(2) + ' T');
 
-            // Set AI Progress Bar Sentimen
             $('#progressPos').css('width', data.sentiment_analysis.positive).text('Pos: ' + data.sentiment_analysis.positive);
             $('#progressNeu').css('width', data.sentiment_analysis.neutral).text('Neu: ' + data.sentiment_analysis.neutral);
             $('#progressNeg').css('width', data.sentiment_analysis.negative).text('Neg: ' + data.sentiment_analysis.negative);
 
-            // Render Grafik Pemecahan Komponen Risiko (Chart.js)
             if(chartRiskInstance) chartRiskInstance.destroy();
             chartRiskInstance = new Chart(ctxRisk, {
                 type: 'radar',
@@ -165,7 +151,6 @@
             });
         });
 
-        // Ambil data posisi koordinat pelabuhan lokal untuk dipetakan ke peta spasial
         $.get('/api/ports?iso=' + isoCode, function(ports) {
             markerGroup.clearLayers();
             if(ports.length > 0) {
@@ -174,7 +159,7 @@
                      .bindPopup(`<b>${p.name}</b><br>Logistics Hub Info.`)
                      .openPopup();
                 });
-                // Geser fokus peta otomatis ke pelabuhan negara terpilih
+
                 map.setView([ports[0].lat, ports[0].lon], 5);
             }
         });

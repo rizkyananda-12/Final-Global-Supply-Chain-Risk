@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\DB;
 
 class RiskScoringEngine {
     
-    // Fitur AI: Analisis Sentimen Berita Logistik/Geopolitik
     public function analyzeNewsSentiment($text) {
         $cleanText = strtolower(preg_replace('/[^a-zA-Z\s]/', '', $text));
         $words = explode(' ', $cleanText);
@@ -31,14 +30,11 @@ class RiskScoringEngine {
             'positive' => $posPercent,
             'neutral' => $neuPercent,
             'negative' => $negPercent,
-            'risk_rating' => $negPercent // Semakin banyak sentimen negatif, risiko naik
+            'risk_rating' => $negPercent 
         ];
     }
 
-    // Fitur Utama: Weighted Risk Model Calculation
     public function calculateTotalRisk($weatherRisk, $inflationRisk, $newsRisk, $currencyRisk) {
-        // Bobot berdasarkan spesifikasi dokumen tugas final kamu:
-        // Weather (30%), Inflation (20%), Political/News (40%), Currency (10%)
         $totalScore = ($weatherRisk * 0.30) + ($inflationRisk * 0.20) + ($newsRisk * 0.40) + ($currencyRisk * 0.10);
         $totalScore = round($totalScore);
 
