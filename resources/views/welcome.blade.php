@@ -15,18 +15,27 @@
 <body>
 
 <div class="container py-5">
+    <!-- NAVBAR ATAS -->
     <div class="d-flex justify-content-between align-items-center mb-5 bg-white p-4 rounded-4 shadow-sm">
         <div>
             <h2 class="fw-bold text-dark mb-0">Global Supply Chain Risk Platform</h2>
             <small class="text-muted">Multi-API Intelligent Decision Support System</small>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-3">
+            <!-- Dropdown Pilihan Negara -->
             <select id="countrySelect" class="form-select form-select-lg fw-bold text-primary border-primary">
                 <!-- Data diisi via AJAX -->
             </select>
+
+            <!-- FORM LOGOUT DI LETAKKAN DI SINI (HTML SEBENARNYA) -->
+            <form action="{{ url('/logout') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-danger fw-bold">Logout</button>
+            </form>
         </div>
     </div>
 
+    <!-- MAIN DASHBOARD -->
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
             <div id="riskCard" class="card text-white bg-dark h-100 p-4 text-center d-flex flex-column justify-content-center">
@@ -102,11 +111,14 @@
     var chartRiskInstance;
 
     $(document).ready(function() {
-        $.get('/api/countries', function(countries) {
+        $.get("{{ url('/api/countries') }}", function(countries) {
+            $('#countrySelect').empty(); // Kosongkan placeholder sebelum mengisi data baru
             countries.forEach(c => {
                 $('#countrySelect').append(`<option value="${c.iso2}">${c.name}</option>`);
             });
-            fetchIntelligenceData($('#countrySelect').val());
+            if(countries.length > 0) {
+                fetchIntelligenceData($('#countrySelect').val());
+            }
         });
 
         $('#countrySelect').change(function() {
@@ -115,7 +127,7 @@
     });
 
     function fetchIntelligenceData(isoCode) {
-        $.get('/api/risk?iso=' + isoCode, function(data) {
+        $.get("{{ url('/api/risk') }}?iso=" + isoCode, function(data) {
             $('#txtTotalScore').text(data.total_risk_score);
             $('#badgeStatus').text(data.status);
 
@@ -151,15 +163,13 @@
             });
         });
 
-        $.get('/api/ports?iso=' + isoCode, function(ports) {
+        $.get("{{ url('/api/ports') }}?iso=" + isoCode, function(ports) {
             markerGroup.clearLayers();
-            if(ports.length > 0) {
+            if(ports && ports.length > 0) {
                 ports.forEach(p => {
                     L.marker([p.lat, p.lon]).addTo(markerGroup)
-                     .bindPopup(`<b>${p.name}</b><br>Logistics Hub Info.`)
-                     .openPopup();
+                     .bindPopup(`<b>${p.name}</b><br>Logistics Hub Info.`);
                 });
-
                 map.setView([ports[0].lat, ports[0].lon], 5);
             }
         });

@@ -25,7 +25,7 @@ class SupplyChainApiController extends Controller {
 
     public function getRiskScore(Request $request) {
         $countryIso = $request->get('iso', 'DE'); 
-        $country = Country::where('iso2', $countryIso)->first();
+        $country = Country::query()->where('iso2', $countryIso)->first();
 
         if (!$country) {
             return response()->json(['message' => 'Country not found'], 404);
@@ -89,15 +89,23 @@ class SupplyChainApiController extends Controller {
         ], 200);
     }
 
-    public function getPorts(Request $request) {
-        $countryIso = $request->get('iso', 'ID');
-        $samplePorts = [
+        public function getPorts(Request $request) {
+         $countryIso = $request->get('iso', 'ID');
+         $samplePorts = [
             'ID' => [['name' => 'Tanjung Priok', 'lat' => -6.10, 'lon' => 106.89], ['name' => 'Tanjung Perak', 'lat' => -7.20, 'lon' => 112.73]],
             'DE' => [['name' => 'Port of Hamburg', 'lat' => 53.54, 'lon' => 9.93]],
             'CN' => [['name' => 'Port of Shanghai', 'lat' => 31.22, 'lon' => 121.48]],
             'AU' => [['name' => 'Port of Sydney', 'lat' => -33.86, 'lon' => 151.21]],
+            'JP' => [['name' => 'Port of Tokyo', 'lat' => 35.62, 'lon' => 139.79]],
+            'US' => [['name' => 'Port of Los Angeles', 'lat' => 33.74, 'lon' => -118.26]],
+            'SG' => [['name' => 'Port of Singapore', 'lat' => 1.26, 'lon' => 103.81]],
+            'GB' => [['name' => 'Port of Felixstowe', 'lat' => 51.96, 'lon' => 1.31]],
+            'CA' => [['name' => 'Port of Vancouver', 'lat' => 49.29, 'lon' => -123.11]],
+            'KR' => [['name' => 'Port of Busan', 'lat' => 35.10, 'lon' => 129.04]],
+            'IN' => [['name' => 'Nhava Sheva (Port of Mumbai)', 'lat' => 18.95, 'lon' => 72.95]],
         ];
 
-        return response()->json($samplePorts[$countryIso] ?? [], 200);
+        $ports = isset($samplePorts[$countryIso]) ? $samplePorts[$countryIso] : [];
+        return response()->json($ports);
     }
 }
