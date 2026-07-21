@@ -13,7 +13,7 @@
             <div class="col-md-4">
                 <div class="card shadow border-0 rounded-3">
                     <div class="card-body p-4">
-                        <h3 class="text-center mb-4 fw-bold text-primary">Admin Login</h3>
+                        <h3 class="text-center mb-4 fw-bold text-primary">Login</h3>
                         
                         <!-- Menampilkan pesan error jika email/password salah -->
                         @if ($errors->any())

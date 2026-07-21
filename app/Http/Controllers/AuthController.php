@@ -36,19 +36,17 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
-    // Menampilkan halaman pendaftaran (Register)
     public function showRegister()
     {
         return view('auth.register');
     }
 
-    // Memproses pendaftaran admin baru
     public function register(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'], // Wajib konfirmasi password
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         \App\Models\User::create([

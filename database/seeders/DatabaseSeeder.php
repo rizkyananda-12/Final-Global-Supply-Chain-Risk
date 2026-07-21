@@ -5,6 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\Port;
+use App\Models\Country;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder {
     public function run(): void {
@@ -37,5 +40,68 @@ class DatabaseSeeder extends Seeder {
             ['name' => 'South Korea', 'iso2' => 'KR', 'currency_code' => 'KRW', 'gdp' => 1700000000000, 'inflation' => 2.6, 'population' => 51000000],
             ['name' => 'India', 'iso2' => 'IN', 'currency_code' => 'INR', 'gdp' => 3700000000000, 'inflation' => 4.8, 'population' => 1430000000]
             ]);
-        }
+        {
+        User::updateOrCreate(
+            ['email' => 'admin@risk.com'],
+            [
+                'name' => 'Admin System',
+                'password' => Hash::make('password123'),
+                'role' => 'admin',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'user@risk.com'],
+            [
+                'name' => 'User Operator',
+                'password' => Hash::make('password123'),
+                'role' => 'user',
+            ]
+        );
+
+        $id = Country::updateOrCreate(
+            ['iso_code' => 'ID'],
+            [
+                'name' => 'Indonesia',
+                'currency' => 'IDR',
+                'inflation' => 2.5,
+                'gdp' => 1300000000000,
+                'population' => 275000000,
+            ]
+        );
+
+        $sg = Country::updateOrCreate(
+            ['iso_code' => 'SG'],
+            [
+                'name' => 'Singapore',
+                'currency' => 'SGD',
+                'inflation' => 1.8,
+                'gdp' => 400000000000,
+                'population' => 5600000,
+            ]
+        );
+
+        $cn = Country::updateOrCreate(
+            ['iso_code' => 'CN'],
+            [
+                'name' => 'China',
+                'currency' => 'CNY',
+                'inflation' => 0.5,
+                'gdp' => 17000000000000,
+                'population' => 1400000000,
+            ]
+        );
+
+        Port::create(['country_id' => $id->id, 'port_name' => 'Tanjung Priok', 'status' => 'active']);
+        Port::create(['country_id' => $id->id, 'port_name' => 'Tanjung Perak', 'status' => 'active']);
+        Port::create(['country_id' => $id->id, 'port_name' => 'Belawan Port', 'status' => 'active']);
+        
+        Port::create(['country_id' => $sg->id, 'port_name' => 'Port of Singapore', 'status' => 'active']);
+        Port::create(['country_id' => $sg->id, 'port_name' => 'Jurong Port', 'status' => 'active']);
+
+        Port::create(['country_id' => $cn->id, 'port_name' => 'Port of Shanghai', 'status' => 'active']);
+        Port::create(['country_id' => $cn->id, 'port_name' => 'Ningbo-Zhoushan Port', 'status' => 'active']);
+        Port::create(['country_id' => $cn->id, 'port_name' => 'Shenzhen Port', 'status' => 'active']);
+    }
+}
     }
